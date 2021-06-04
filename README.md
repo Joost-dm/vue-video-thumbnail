@@ -8,7 +8,7 @@ npm install vue-video-thumbnail
 
 ### Usage
 ```
-import VueVideoThumbnail from '@/components/VueVideoThumbnail';
+import VueVideoThumbnail from 'vue-video-thumbnail'
     ...
     
 components: { VueVideoThumbnail },
@@ -16,7 +16,7 @@ components: { VueVideoThumbnail },
 ```
 
 ```
-    <VideoSnapshot
+    <VueVideoThumbnail
       video-src="your source"
       :snapshot-at-duration-percent="70"
       :width="500"
@@ -32,7 +32,7 @@ components: { VueVideoThumbnail },
           alt="snapshot"
         >
       </template>
-    </VideoSnapshot>
+    </VueVideoThumbnail>
 ```
 ### Slots
 ##### #snapshot - slot for custom snapshot rendering
