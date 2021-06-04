@@ -1,8 +1,12 @@
 {
   "name": "vue-video-thumbnail",
-  "homepage": "https://github.com/Joost-dm/vue-video-thumbnail",
+  "homepage": "https://joost-dm.github.io/vue-video-thumbnail/",
   "main": "./lib/vue-video-thumbnail.common.js",
-  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joost-dm/vue-video-thumbnail"
+  },
+  "version": "0.1.4",
    "author": "VasiliyShirokov <vasiliishirokov@gmail.com>",
   "scripts": {
     "serve": "vue-cli-service serve --port 3000",
@@ -10,11 +14,9 @@
     "deploy": "gh-pages -d demo",
     "build": "vue-cli-service build --target lib --name vue-video-thumbnail src/lib.js"
   },
-  "dependencies": {
-    "core-js": "^3.6.5",
-    "vue": "^2.6.11"
-  },
   "devDependencies": {
+    "core-js": "^3.6.5",
+    "vue": "^2.6.11",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
     "gh-pages": "^3.2.0",
