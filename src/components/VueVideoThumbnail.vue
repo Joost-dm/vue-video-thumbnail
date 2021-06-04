@@ -1,0 +1,366 @@
+<template>
+  <div
+    class="snapshot-generator"
+  >
+    <video
+      ref="videoEl"
+      class="snapshot-generator__hidden"
+      muted
+      :src="videoSrc"
+      @loadeddata="onLoadedData"
+      @loadedmetadata="onLoadedMetadata"
+      @suspend="onSuspend"
+      @seeked="onSeeked"
+    />
+    <canvas
+      ref="canvas"
+      class="snapshot-generator__hidden"
+    />
+    <!--    slot for custom snapshot handling-->
+    <slot
+      name="snapshot"
+      :snapshot="displayedSnapshot"
+      :renderThumbnail="renderThumbnail"
+    >
+      <img
+        v-if="displayedSnapshot && renderThumbnail"
+        :src="displayedSnapshot"
+        alt="snapshot"
+      >
+    </slot>
+  </div>
+</template>
+
+<script>
+
+export default {
+  name: 'VideoSnapshot',
+  props: {
+    videoSrc: {
+      type: String,
+      required: true,
+    },
+
+    renderThumbnail: {
+      type: Boolean,
+      default: true,
+    },
+
+    width: {
+      type: Number,
+      default: 250,
+      validator: (value) => value > 0,
+    },
+
+    height: {
+      type: Number,
+      default: 250,
+      validator: (value) => value > 0,
+    },
+
+    snapshotAtTime: {
+      type: Number,
+      default: 2,
+      validator: (value) => value > 0,
+    },
+
+    snapshotScaleType: {
+      type: String,
+      default: 'contain',
+      validator: (value) => ['contain', 'cover'].indexOf(value) !== -1,
+    },
+
+    backgroundFillColor: {
+      type: String,
+      default: '#000000',
+    },
+
+    snapshotAtDurationPercent: {
+      type: Number,
+      default: 50,
+      validator: (value) => !(value > 100 || value < 0),
+    },
+
+    snapshotQuality: {
+      type: Number,
+      default: 0.8,
+      validator: (value) => !(value > 1 || value < 0),
+    },
+
+    snapshotFormat: {
+      type: String,
+      default: 'image/jpeg',
+    },
+
+    cors: {
+      type: Boolean,
+      default: false,
+    },
+
+    percentagesArray: {
+      type: Array,
+      default: null,
+    },
+
+    // number of snapshots, that will be created, evenly distributing through the video duration.
+    chunksQuantity: {
+      type: Number,
+      default: null,
+      validator: (value) => value > 0,
+    },
+
+    // if set to true, the component destroys video and canvas elements to clear the DOM after creating first snapshot
+    // or snapshotsArray, if its required, so the creation of new snapshots become impossible after that.
+    once: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
+  data: () => ({
+    displayedSnapshot: null,
+    metadataLoaded: false,
+    dataLoaded: false,
+    suspended: false,
+    seeked: false,
+    duration: null,
+    snapshots: [],
+    awaitForMultiSnapshots: false,
+    awaitForSingleSnapshot: true,
+    timestamps: [],
+    displayedSnapshotTime: null,
+  }),
+
+  computed: {
+    video() {
+      return (this.$refs.videoEl) ? this.$refs.videoEl : null;
+    },
+
+    canvas() {
+      return (this.$refs.canvas) ? this.$refs.canvas : null;
+    },
+
+    multiSnapshotsIsNeeded() {
+      return !this.snapshots.length && (!!this.percentagesArray || !!this.chunksQuantity);
+    },
+  },
+
+  watch: {
+    snapshotAtDurationPercent(newVal) {
+      this.getSnapshotByPercentage(newVal);
+    },
+
+    width() {
+      this.refreshPropUpdated();
+    },
+
+    height() {
+      this.refreshPropUpdated();
+    },
+
+    snapshotQuality() {
+      this.refreshPropUpdated();
+    },
+
+    snapshotFormat() {
+      this.refreshPropUpdated();
+    },
+
+  },
+
+  mounted() {
+    if (!this.cors) this.$refs.videoEl.setAttribute('crossOrigin', 'Anonymous');
+  },
+
+  beforeDestroy() {
+    this.clear();
+  },
+
+  methods: {
+    // Video element condition's handlers.
+
+    onLoadedData() {
+      this.dataLoaded = true;
+      this.videoConditionUpdateHandler();
+    },
+
+    onLoadedMetadata() {
+      this.metadataLoaded = true;
+      this.videoConditionUpdateHandler();
+    },
+
+    onSuspend() {
+      this.suspended = true;
+      this.videoConditionUpdateHandler();
+    },
+
+    onSeeked() {
+      this.seeked = true;
+      if (!this.displayedSnapshot || this.awaitForSingleSnapshot) this.createSingleSnapshot();
+      else if (this.awaitForMultiSnapshots) this.multiSnapshotsSeekHandler();
+    },
+
+    videoConditionUpdateHandler() {
+      if (!this.video || !this.canvas) return;
+      if (this.metadataLoaded && this.dataLoaded && this.suspended) {
+        this.duration = this.video.duration;
+        if (this.awaitForSingleSnapshot) {
+          let snapshotTime = this.snapshotAtTime;
+
+          if (this.snapshotAtDurationPercent) snapshotTime = this.percentageToTime(this.snapshotAtDurationPercent);
+          if (!this.video.currentTime || this.video.currentTime < snapshotTime) {
+            this.setVideoTime(snapshotTime);
+          }
+        }
+      }
+    },
+
+    // Props condition handlers
+
+    refreshPropUpdated() {
+      this.awaitForSingleSnapshot = true;
+      this.videoConditionUpdateHandler();
+    },
+
+    handleArrayProps() {
+      if (!this.multiSnapshotsIsNeeded) return;
+      if (this.percentagesArray) {
+        this.timestamps = this.getTimestampsByPercentagesArray(this.percentagesArray);
+        this.createMultiSnapshots();
+      } else if (this.chunksQuantity) {
+        this.timestamps = this.getTimestampsByChunksQuantity(this.chunksQuantity);
+        this.createMultiSnapshots();
+      }
+    },
+
+    // Snapshot creation handlers
+
+    createSingleSnapshot() {
+      this.displayedSnapshot = this.createSnapshot();
+      this.displayedSnapshotTime = this.video.currentTime;
+      this.$emit('snapshotCreated', this.displayedSnapshot);
+      this.awaitForSingleSnapshot = false;
+      if (this.multiSnapshotsIsNeeded) this.handleArrayProps();
+      else if (this.once) this.clear();
+    },
+
+    createMultiSnapshots() {
+      this.awaitForMultiSnapshots = (this.timestamps.length !== this.snapshots.length);
+      if (this.awaitForMultiSnapshots) {
+        this.setVideoTime(this.timestamps[this.snapshots.length]);
+      } else {
+        this.$emit('snapshotsArrayCreated', this.snapshots);
+        this.setVideoTime(this.displayedSnapshotTime);
+        if (this.once) this.clear();
+      }
+    },
+
+    multiSnapshotsSeekHandler() {
+      const snapshot = this.createSnapshot();
+      this.snapshots.push(snapshot);
+      this.createMultiSnapshots();
+    },
+
+    getSnapshotByTime(time) {
+      if (!this.video || !this.canvas) return;
+      this.awaitForSingleSnapshot = true;
+      this.setVideoTime(time);
+    },
+
+    getSnapshotByPercentage(percentage) {
+      this.getSnapshotByTime(this.percentageToTime(percentage));
+    },
+
+    // Snapshot creation function
+
+    createSnapshot() {
+      this.canvas.height = this.height;
+      this.canvas.width = this.width;
+      const context = this.canvas.getContext('2d');
+
+      // Coloring canvas background
+
+      context.rect(0, 0, this.width, this.height);
+      context.fillStyle = this.backgroundFillColor;
+      context.fill();
+
+      // Image scaling and placing it to canvas
+
+      if (this.snapshotScaleType === 'contain') {
+        const scale = Math.min(this.canvas.width / this.video.videoWidth, this.canvas.height / this.video.videoHeight);
+        const x = (this.width / 2) - (this.video.videoWidth / 2) * scale;
+        const y = (this.height / 2) - (this.video.videoHeight / 2) * scale;
+        context.drawImage(this.video, x, y, this.video.videoWidth * scale, this.video.videoHeight * scale);
+      } else if (this.snapshotScaleType === 'cover') {
+        const scale = this.height / this.width;
+        let width = this.video.videoWidth;
+        let height = this.video.videoHeight;
+        const imgRatio = height / width;
+
+        if (imgRatio > scale) {
+          height = width * scale;
+        } else {
+          width = height / scale;
+        }
+
+        context.drawImage(this.video,
+          (this.video.videoWidth - width) * 0.5, (this.video.videoHeight - height) * 0.5, width, height,
+          0, 0, this.width, this.height);
+      }
+
+      // Converting canvas to data url
+
+      const snapshot = this.canvas.toDataURL(this.snapshotFormat, this.snapshotQuality);
+      this.$emit('sizeChanged', snapshot.length);
+      return snapshot;
+    },
+
+    // Utils
+
+    setVideoTime(time) {
+      this.video.currentTime = time;
+    },
+
+    clear() {
+      this.video.src = '';
+      this.video.remove();
+      this.canvas.remove();
+    },
+
+    percentageToTime(percentage) {
+      return this.duration * (percentage / 100);
+    },
+
+    getTimestampsByChunksQuantity(chunksQuantity) {
+      const chunkLength = this.duration / chunksQuantity;
+      const timestamps = [];
+      for (let i = 0; i < chunksQuantity; i++) {
+        timestamps.push(((i + 1) * chunkLength).toFixed(2));
+      }
+      return timestamps;
+    },
+
+    getTimestampsByPercentagesArray(percentagesArray) {
+      return percentagesArray.map((percentage) => this.percentageToTime(percentage));
+    },
+
+  },
+};
+</script>
+
+<style scoped>
+.snapshot-generator {
+  display: block;
+  width: 1px;
+  height: 1px;
+}
+.snapshot-generator__hidden {
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: -1;
+}
+</style>
