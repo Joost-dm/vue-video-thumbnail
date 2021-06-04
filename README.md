@@ -1,4 +1,9 @@
 # vue-video-thumbnail
+A component that creates snapshots from video. Only video src is required.
+A lot of props for customize, slot for custom snapshot rendering.
+Can create multiple snapshots.  
+I hope it will be helpful for you ;)
+
 
 Demo: https://joost-dm.github.io/vue-video-thumbnail/
 ## Project setup
@@ -6,7 +11,7 @@ Demo: https://joost-dm.github.io/vue-video-thumbnail/
 npm install vue-video-thumbnail
 ```
 
-### Usage
+## Usage
 ```
 import VueVideoThumbnail from 'vue-video-thumbnail'
     ...
@@ -34,7 +39,7 @@ components: { VueVideoThumbnail },
       </template>
     </VueVideoThumbnail>
 ```
-### Slots
+## Slots
 ##### #snapshot - slot for custom snapshot rendering
 ```
     <template #snapshot="{snapshot}"> 
@@ -46,14 +51,14 @@ components: { VueVideoThumbnail },
     </template>
 ```
 
-### Events
+## Events
  ##### @snapshotCreated
     Returns a single snapshot when its ready
 
 ##### @snapshotsArrayCreated
     Returns an array of snapshots when they are ready.
     Don't forget to send percentagesArray or chunksQuantity props.
-### Props
+## Props
 
 ##### videoSrc:
 ###### video source 
