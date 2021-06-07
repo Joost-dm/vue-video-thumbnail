@@ -3,6 +3,7 @@
     class="snapshot-generator"
   >
     <video
+      v-if="toolsActive"
       ref="videoEl"
       class="snapshot-generator__hidden"
       muted
@@ -13,6 +14,7 @@
       @seeked="onSeeked"
     />
     <canvas
+      v-if="toolsActive"
       ref="canvas"
       class="snapshot-generator__hidden"
     />
@@ -34,7 +36,7 @@
 <script>
 
 export default {
-  name: 'VideoSnapshot',
+  name: 'VueVideoThumbnail',
   props: {
     videoSrc: {
       type: String,
@@ -129,6 +131,7 @@ export default {
     awaitForSingleSnapshot: true,
     timestamps: [],
     displayedSnapshotTime: null,
+    toolsActive: true,
   }),
 
   computed: {
@@ -164,6 +167,10 @@ export default {
 
     snapshotFormat() {
       this.refreshPropUpdated();
+    },
+
+    videoSrc(newVal, oldVal) {
+      if (newVal && newVal !== oldVal) this.refresh();
     },
 
   },
@@ -206,7 +213,6 @@ export default {
         this.duration = this.video.duration;
         if (this.awaitForSingleSnapshot) {
           let snapshotTime = this.snapshotAtTime;
-
           if (this.snapshotAtDurationPercent) snapshotTime = this.percentageToTime(this.snapshotAtDurationPercent);
           if (!this.video.currentTime || this.video.currentTime < snapshotTime) {
             this.setVideoTime(snapshotTime);
@@ -318,13 +324,35 @@ export default {
     // Utils
 
     setVideoTime(time) {
-      this.video.currentTime = time;
+      if (this.video && time) this.video.currentTime = time;
     },
 
     clear() {
-      this.video.src = '';
-      this.video.remove();
-      this.canvas.remove();
+      this.toolsActive = false;
+    },
+
+    refresh() {
+      this.toolsActive = true;
+      this.metadataLoaded = false;
+      this.dataLoaded = false;
+      this.suspended = false;
+      this.seeked = false;
+      this.duration = null;
+      this.snapshots = [];
+      this.awaitForMultiSnapshots = false;
+      this.awaitForSingleSnapshot = true;
+      this.timestamps = [];
+      this.displayedSnapshotTime = null;
+      this.$nextTick(() => {
+        this.video.currentTime = 0;
+        this.video.src = '';
+        this.video.src = this.videoSrc;
+        const context = this.canvas.getContext('2d');
+        context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.$nextTick(() => {
+          this.videoConditionUpdateHandler();
+        });
+      });
     },
 
     percentageToTime(percentage) {
@@ -364,3 +392,4 @@ export default {
   z-index: -1;
 }
 </style>
+
