@@ -23,6 +23,7 @@ components: { VueVideoThumbnail },
 ```
     <VueVideoThumbnail
       video-src="your source"
+      show-play-button
       :snapshot-at-duration-percent="70"
       :width="500"
       :height="300"
@@ -130,4 +131,10 @@ components: { VueVideoThumbnail },
 ###### if set to true, the component destroys video and canvas elements to clear the DOM after creating first snapshot or snapshotsArray, if its required, so the creation of new snapshots become impossible after that.
     type: Boolean
     default: false
+
+##### showPlayButton:
+###### if set to true, shows the "play" button at the snapshot center.
+    type: Boolean
+    default: false
+
 

@@ -1,12 +1,13 @@
 {
   "name": "vue-video-thumbnail",
-  "homepage": "https://joost-dm.github.io/vue-video-thumbnail/",
+  "homepage": "https://www.npmjs.com/package/vue-video-thumbnail",
   "main": "./lib/vue-video-thumbnail.common.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/Joost-dm/vue-video-thumbnail"
   },
-  "version": "0.1.8",
+  "version": "0.1.12",
+  "license": "ISC",
    "author": "VasiliyShirokov <vasiliishirokov@gmail.com>",
   "scripts": {
     "serve": "vue-cli-service serve --port 3000",

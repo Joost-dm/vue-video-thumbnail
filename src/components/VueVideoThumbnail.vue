@@ -1,6 +1,9 @@
 <template>
   <div
-    class="snapshot-generator"
+    :class="[
+        'snapshot-generator',
+        (showPlayButton && displayedSnapshot) ? 'snapshot-generator__play-button' : ''
+    ]"
   >
     <video
       v-if="toolsActive"
@@ -19,16 +22,16 @@
       class="snapshot-generator__hidden"
     />
     <!--    slot for custom snapshot handling-->
-    <slot
+      <slot
       name="snapshot"
       :snapshot="displayedSnapshot"
       :renderThumbnail="renderThumbnail"
     >
-      <img
-        v-if="displayedSnapshot && renderThumbnail"
-        :src="displayedSnapshot"
-        alt="snapshot"
-      >
+        <img
+          v-if="displayedSnapshot && renderThumbnail"
+          :src="displayedSnapshot"
+          alt="snapshot"
+        >
     </slot>
   </div>
 </template>
@@ -114,6 +117,11 @@ export default {
     // if set to true, the component destroys video and canvas elements to clear the DOM after creating first snapshot
     // or snapshotsArray, if its required, so the creation of new snapshots become impossible after that.
     once: {
+      type: Boolean,
+      default: false,
+    },
+
+    showPlayButton: {
       type: Boolean,
       default: false,
     },
@@ -376,11 +384,10 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 .snapshot-generator {
   display: block;
-  width: 1px;
-  height: 1px;
+  position: relative;
 }
 .snapshot-generator__hidden {
   height: 1px;
@@ -390,6 +397,46 @@ export default {
   bottom: 0;
   right: 0;
   z-index: -1;
+}
+.snapshot-generator__play-button {
+  width: min-content;
+  height: min-content;
+  position: relative;
+  cursor: pointer;
+}
+.snapshot-generator__play-button:after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 50px / 2);
+  left: calc(50% - 50px / 2);
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  background-color: #4F4F4F;
+  opacity: 0.5;
+}
+.snapshot-generator__play-button:before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 50px  / 4);
+  left: calc(50% - 50px / 8);
+  height: 0;
+  width: calc(50px / 2);
+  border: calc(50px / 4) solid transparent;
+  border-left: calc(50px / 2.75) solid white;
+  z-index: 2;
+  opacity: 0.75;
+}
+.snapshot-generator__play-button:hover:before {
+  opacity: 1;
+}
+.snapshot-generator__play-button:active:after {
+  transform: scale(0.95);
+  transition: 0.1s;
+}
+.snapshot-generator__play-button:active:before {
+  transform: scale(0.95);
+  transition: 0.1s;
 }
 </style>
 

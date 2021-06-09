@@ -2,7 +2,7 @@
   <div class="app-grid">
     <div class="app-grid__controllers">
       <label for="src">Video src:</label>
-      <input disabled id="src" type="text" v-model="videoSrc" placeholder="video src">
+      <input id="src" type="text" v-model="videoSrc" placeholder="video src">
       <label for="percentage">Snapshot at video duration percent:</label>
       <input id="percentage" type="number" min="0" max="100" v-model="snapshotPercentage" placeholder="percentage">
       <label for="height">Height:</label>
@@ -13,9 +13,12 @@
       <input id="quality" type="number" step="0.1" min="0" max="1" v-model="snapshotQuality" placeholder="quality">
       <label for="format">Format:</label>
       <input id="format" v-model="snapshotFormat" placeholder="format">
+      <label for="showPlayButton">Show play button:</label>
+      <input id="showPlayButton" type="checkbox" v-model="showPlayButton" placeholder="show play button">
     </div>
     <div class="app-grid__preview">
       <VueVideoThumbnail
+      :show-play-button="showPlayButton"
       :video-src="videoSrc"
       :snapshot-at-duration-percent="parseInt(snapshotPercentage, 10)"
       snapshot-scale-type="contain"
@@ -26,11 +29,12 @@
       :height="parseInt(snapshotHeight, 10)"
       :chunks-quantity="10"
       @sizeChanged="(value) => snapshotSize = value"
-      @snapshotCreated="test"
-      @snapshotsArrayCreated="test"
+      @snapshotCreated="logOutput"
+      @snapshotsArrayCreated="logOutput"
+
     >
       <template #snapshot="{snapshot}">
-        <img
+           <img
           v-if="snapshot"
           :src="snapshot"
           alt="snapshot"
@@ -46,7 +50,7 @@
 import VueVideoThumbnail from '@/components/VueVideoThumbnail';
 
 export default {
-  name: 'TestPage',
+  name: 'DemoPage',
   components: { VueVideoThumbnail },
   data: () => ({
     videoSrc: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
@@ -57,11 +61,12 @@ export default {
     snapshotQuality: 0.8,
     snapshotFormat: 'image/jpeg',
     snapshotSize: 0,
+    showPlayButton: true,
   }),
 
   methods: {
-    test(image) {
-      console.log(image);
+    logOutput(outputData) {
+      console.log(outputData);
     },
   },
 };
